@@ -2,9 +2,10 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from PIL import Image
+import requests
+from io import BytesIO
 import plotly.graph_objects as go
 from time import sleep
-import requests
 
 # ------------------------------
 # 페이지 설정
@@ -13,13 +14,13 @@ st.set_page_config(page_title="교육용 산-염기 적정 실험실", layout="w
 st.title("🏫 가상 산-염기 적정 실험실 (교육용)")
 
 # ------------------------------
-# 이미지 불러오기 (GitHub raw URL 사용)
+# GitHub raw URL로 이미지 불러오기
 # ------------------------------
-buret_url = "https://raw.githubusercontent.com/username/virtual_titration_lab/main/images/buret.png"
-flask_url = "https://raw.githubusercontent.com/username/virtual_titration_lab/main/images/flask.png"
+buret_url = "https://raw.githubusercontent.com/zaranaragomzi-a11y/experiment/main/images/buret.png"
+flask_url = "https://raw.githubusercontent.com/zaranaragomzi-a11y/experiment/main/images/flask.png"
 
-buret_img = Image.open(requests.get(buret_url, stream=True).raw)
-flask_img = Image.open(requests.get(flask_url, stream=True).raw)
+buret_img = Image.open(BytesIO(requests.get(buret_url).content))
+flask_img = Image.open(BytesIO(requests.get(flask_url).content))
 
 # ------------------------------
 # 실험 조건
@@ -32,7 +33,7 @@ base_eq = st.sidebar.selectbox("염기 당량수", [1,2,3])
 acid_conc = st.sidebar.number_input("산 농도 (M)", 0.1, 2.0, 0.1)
 acid_vol = st.sidebar.number_input("산 부피 (mL)", 10.0, 100.0, 25.0)
 base_conc = st.sidebar.number_input("염기 농도 (M)", 0.1, 2.0, 0.1)
-base_vol = st.sidebar.slider("적정 용액 부피 (mL)", 0.0, 2*acid_vol, 50.0)
+base_vol = st.sidebar.slider("적정 용액 최대 부피 (mL)", 0.0, 2*acid_vol, 50.0)
 
 Ka = 10**(-st.sidebar.number_input("약산 pKa",3.0,10.0,5.0)) if acid_type=="약산" else None
 Kb = 10**(-st.sidebar.number_input("약염기 pKb",3.0,10.0,5.0)) if base_type=="약염기" else None
