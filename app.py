@@ -4,6 +4,7 @@ import pandas as pd
 from PIL import Image
 import plotly.graph_objects as go
 from time import sleep
+import requests
 
 # ------------------------------
 # 페이지 설정
@@ -12,10 +13,13 @@ st.set_page_config(page_title="교육용 산-염기 적정 실험실", layout="w
 st.title("🏫 가상 산-염기 적정 실험실 (교육용)")
 
 # ------------------------------
-# 이미지 로드
+# 이미지 불러오기 (GitHub raw URL 사용)
 # ------------------------------
-buret_img = Image.open("images/buret.png")
-flask_img = Image.open("images/flask.png")
+buret_url = "https://raw.githubusercontent.com/username/virtual_titration_lab/main/images/buret.png"
+flask_url = "https://raw.githubusercontent.com/username/virtual_titration_lab/main/images/flask.png"
+
+buret_img = Image.open(requests.get(buret_url, stream=True).raw)
+flask_img = Image.open(requests.get(flask_url, stream=True).raw)
 
 # ------------------------------
 # 실험 조건
@@ -28,6 +32,7 @@ base_eq = st.sidebar.selectbox("염기 당량수", [1,2,3])
 acid_conc = st.sidebar.number_input("산 농도 (M)", 0.1, 2.0, 0.1)
 acid_vol = st.sidebar.number_input("산 부피 (mL)", 10.0, 100.0, 25.0)
 base_conc = st.sidebar.number_input("염기 농도 (M)", 0.1, 2.0, 0.1)
+base_vol = st.sidebar.slider("적정 용액 부피 (mL)", 0.0, 2*acid_vol, 50.0)
 
 Ka = 10**(-st.sidebar.number_input("약산 pKa",3.0,10.0,5.0)) if acid_type=="약산" else None
 Kb = 10**(-st.sidebar.number_input("약염기 pKb",3.0,10.0,5.0)) if base_type=="약염기" else None
@@ -73,7 +78,7 @@ def calc_pH(Vb):
 # ------------------------------
 # 적정 시뮬레이션
 # ------------------------------
-Vb_values = np.linspace(0, 2*acid_vol, 50)
+Vb_values = np.linspace(0, base_vol, 50)
 pH_values = [calc_pH(v) for v in Vb_values]
 diffs = np.gradient(pH_values)
 eq_index = np.argmax(diffs)
@@ -89,7 +94,7 @@ plot_area = st.empty()
 flask_col, buret_col = st.columns([1,0.2])
 flask_disp = flask_col.empty()
 buret_disp = buret_col.empty()
-buret_disp.image(buret_img)
+buret_disp.image(buret_img, width=50)
 
 # ------------------------------
 # 방울 단위 애니메이션
@@ -127,3 +132,12 @@ else:
 if acid_type=="약산":
     half_pH = calc_pH(eq_vol/2)
     st.info(f"pKa ≈ {half_pH:.2f}")
+
+# ------------------------------
+# CSV 데이터 표시
+# ------------------------------
+if uploaded_file:
+    df_exp = pd.read_csv(uploaded_file)
+    fig.add_trace(go.Scatter(x=df_exp.iloc[:,0], y=df_exp.iloc[:,1], mode='markers+lines', name='실험 데이터',
+                             marker=dict(color='orange', size=6)))
+    plot_area.plotly_chart(fig, use_container_width=True)
